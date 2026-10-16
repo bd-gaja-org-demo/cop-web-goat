@@ -1,11 +1,12 @@
-# Adding a commnent for the first scan
 name: COP Coverity Scan
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
   pull_request:
-    branches: [main]
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
@@ -20,23 +21,47 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up JDK
+      - name: Set up JDK 25
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '25'
+          java-version: "25"
           cache: maven
 
-          
-      - name: Test Maven build on Java 21 (outside Coverity)
-        run: mvn -B clean compile -DskipTests -Dspotless.check.skip=true
+      - name: Validate Maven build without tests
+        run: >
+          mvn -B clean package
+          -DskipTests
+          -DskipITs
+          -Dspotless.check.skip=true
 
-      
       - name: Download Polaris CLI
+        shell: bash
         run: |
-          curl -fLsS -o polaris_cli.zip "$POLARIS_SERVER_URL/api/tools/polaris_cli-linux64.zip"
-          unzip -qo polaris_cli.zip -d /tmp
-          echo "$(ls -d /tmp/polaris_cli-*/bin)" >> $GITHUB_PATH
+          curl -fLsS \
+            -o polaris_cli.zip \
+            "${POLARIS_SERVER_URL}/api/tools/polaris_cli-linux64.zip"
 
-      - name: Run Polaris analysis
-        run: polaris --co project.name=gaja-cop-scan analyze -w
+          rm -rf /tmp/polaris-cli
+          mkdir -p /tmp/polaris-cli
+          unzip -qo polaris_cli.zip -d /tmp/polaris-cli
+
+          POLARIS_BIN="$(find /tmp/polaris-cli -type f -name polaris -print -quit)"
+
+          if [ -z "$POLARIS_BIN" ]; then
+            echo "Polaris executable was not found in the downloaded archive."
+            exit 1
+          fi
+
+          chmod +x "$POLARIS_BIN"
+          echo "$(dirname "$POLARIS_BIN")" >> "$GITHUB_PATH"
+
+      - name: Show Coverity build configuration
+        run: cat coverity.yaml
+
+      - name: Run Coverity on Polaris analysis
+        run: |
+          polaris \
+            --co project.name=gaja-cop-scan \
+            analyze \
+            -w
