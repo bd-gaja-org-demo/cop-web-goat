@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      POLARIS_SERVER_URL: ${{ vars.COP_POLARIS_SERVER_URL }}
+      POLARIS_SERVER_URL: ${{ secrets.COP_POLARIS_SERVER_URL }}
       POLARIS_ACCESS_TOKEN: ${{ secrets.COP_POLARIS_ACCESS_TOKEN }}
 
     steps:
@@ -38,4 +38,4 @@ jobs:
           echo "$(ls -d /tmp/polaris_cli-*/bin)" >> $GITHUB_PATH
 
       - name: Run Polaris analysis
-        run: polaris --co project.name=coptest analyze -w
+        run: polaris --co project.name=gaja-cop-scan analyze -w
