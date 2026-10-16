@@ -1,4 +1,4 @@
-# Adding a commnent 
+# Adding a commnent for the first scan
 name: COP Coverity Scan
 
 on:
